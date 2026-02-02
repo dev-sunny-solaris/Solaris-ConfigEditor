@@ -1,0 +1,28 @@
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Composer
+vendor/
+composer.lock
+
+# PHPUnit
+phpunit.xml
+coverage/
+.phpunit.result.cache
+
+# Environment
+.env
+.env.local
+*.log
+
+# Node (if using any build tools)
+node_modules/
+npm-debug.log
+
+# OS
+Thumbs.db

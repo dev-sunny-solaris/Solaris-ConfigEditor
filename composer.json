@@ -1,0 +1,51 @@
+{
+    "name": "solaris/config-editor",
+    "description": "A powerful PHP configuration file editor using nikic/php-parser. Programmatically read and modify PHP config files while preserving formatting and structure.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Romadan Saputra",
+            "email": "hi.madan27@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "nikic/php-parser": "^4.13 || ^5.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Solaris\\ConfigEditor\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Solaris\\ConfigEditor\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "test:coverage": "phpunit --coverage-html coverage",
+        "phpunit": "phpunit",
+        "setup": "@composer install"
+    },
+    "keywords": [
+        "config",
+        "editor",
+        "php",
+        "parser",
+        "configuration",
+        "laravel"
+    ],
+    "homepage": "https://github.com/dev-sunny-solaris/solaris-config-editor",
+    "support": {
+        "issues": "https://github.com/dev-sunny-solaris/solaris-config-editor/issues",
+        "source": "https://github.com/dev-sunny-solaris/solaris-config-editor"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
