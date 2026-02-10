@@ -206,6 +206,7 @@ class ConfigEditor
     protected function mergeArrays(Array_ $target, Array_ $source): void
     {
         foreach ($source->items as $sourceItem) {
+            // Skip items without string keys (shouldn't happen at top level, but safe guard)
             if (!$sourceItem->key instanceof String_) {
                 continue;
             }
@@ -216,45 +217,107 @@ class ConfigEditor
             if (!$targetItem) {
                 // Key tidak ada di target, tambahkan apa adanya
                 $target->items[] = new ArrayItem(
-                    $sourceItem->value,
+                    $this->cloneNode($sourceItem->value),
                     new String_($key)
                 );
             } elseif ($sourceItem->value instanceof Array_ && $targetItem->value instanceof Array_) {
                 // Kedua value adalah array, merge dengan smart logic
                 $this->mergeArrayItems($targetItem->value, $sourceItem->value);
             } else {
-                // Overwrite value dengan value dari source (timpa)
-                $targetItem->value = $sourceItem->value;
+                // Scalar: override wins
+                $targetItem->value = $this->cloneNode($sourceItem->value);
             }
         }
     }
 
     protected function mergeArrayItems(Array_ $target, Array_ $source): void
     {
-        foreach ($source->items as $sourceItem) {
-            // Cek apakah item ini sudah ada di target
-            $found = false;
-            foreach ($target->items as $targetItem) {
-                if ($this->nodesEqual($targetItem->value, $sourceItem->value)) {
-                    $found = true;
-                    break;
+        // Deteksi apakah ini indexed atau associative array
+        $isIndexed = $this->isIndexedArray($source) && $this->isIndexedArray($target);
+        
+        if ($isIndexed) {
+            // Indexed array: deduplicate & append
+            foreach ($source->items as $sourceItem) {
+                $found = false;
+                
+                foreach ($target->items as $targetItem) {
+                    if ($this->nodesEqual($targetItem->value, $sourceItem->value)) {
+                        $found = true;
+                        break;
+                    }
+                }
+                
+                if (!$found) {
+                    $target->items[] = new ArrayItem(
+                        $this->cloneNode($sourceItem->value)
+                    );
                 }
             }
-
-            // Jika tidak ditemukan, push ke array
-            if (!$found) {
-                $target->items[] = new ArrayItem(
-                    $sourceItem->value,
-                    $sourceItem->key
-                );
+        } else {
+            // Associative array: recursive merge per key
+            foreach ($source->items as $sourceItem) {
+                // Jika item tidak punya key (indexed item di assoc array), skip
+                if (!$sourceItem->key instanceof String_) {
+                    // Tambahkan sebagai indexed item
+                    $target->items[] = new ArrayItem(
+                        $this->cloneNode($sourceItem->value),
+                        null
+                    );
+                    continue;
+                }
+                
+                $key = $sourceItem->key->value;
+                $targetItem = $this->findItem($target, $key);
+                
+                if (!$targetItem) {
+                    // Key belum ada, tambahkan
+                    $target->items[] = new ArrayItem(
+                        $this->cloneNode($sourceItem->value),
+                        new String_($key)
+                    );
+                } elseif ($sourceItem->value instanceof Array_ && $targetItem->value instanceof Array_) {
+                    // Kedua array, recursive merge
+                    $this->mergeArrayItems($targetItem->value, $sourceItem->value);
+                } else {
+                    // Scalar override
+                    $targetItem->value = $this->cloneNode($sourceItem->value);
+                }
             }
         }
+    }
+
+    protected function isIndexedArray(Array_ $array): bool
+    {
+        if (empty($array->items)) {
+            return true;
+        }
+        
+        // Indexed array = semua items tidak punya key atau key numerik sequential
+        foreach ($array->items as $item) {
+            // Jika ada string key, bukan indexed
+            if ($item->key instanceof String_) {
+                return false;
+            }
+            
+            // Jika key adalah expression lain selain null atau int literal, anggap assoc
+            if ($item->key !== null && !$item->key instanceof Node\Scalar\Int_) {
+                return false;
+            }
+        }
+        
+        return true;
     }
 
     protected function nodesEqual(Node $node1, Node $node2): bool
     {
         $printer = new Standard();
         return $printer->prettyPrint([$node1]) === $printer->prettyPrint([$node2]);
+    }
+
+    protected function cloneNode(Node $node): Node
+    {
+        // Deep clone untuk avoid reference issues
+        return clone $node;
     }
 
     public function save(?string $filename = null): self
@@ -393,16 +456,5 @@ class ConfigEditor
         }
 
         throw new \RuntimeException('Code must be a valid expression');
-    }
-
-    protected function markMultiline(Array_ $array): void
-    {
-        $array->setAttribute('multiline', true);
-
-        foreach ($array->items as $item) {
-            if ($item->value instanceof Array_) {
-                $this->markMultiline($item->value);
-            }
-        }
     }
 }
