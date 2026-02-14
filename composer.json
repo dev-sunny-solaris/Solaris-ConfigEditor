@@ -1,5 +1,5 @@
 {
-    "name": "solaris/config-editor",
+    "name": "sunny-solaris/config-editor",
     "description": "A powerful PHP configuration file editor using nikic/php-parser. Programmatically read and modify PHP config files while preserving formatting and structure.",
     "type": "library",
     "license": "MIT",
