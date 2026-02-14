@@ -310,7 +310,7 @@ class ConfigEditor
 
     protected function nodesEqual(Node $node1, Node $node2): bool
     {
-        $printer = new Standard();
+        $printer = new ConfigPrinter();
         return $printer->prettyPrint([$node1]) === $printer->prettyPrint([$node2]);
     }
 
@@ -322,29 +322,7 @@ class ConfigEditor
 
     public function save(?string $filename = null): self
     {
-        $printer = new class(['shortArraySyntax' => true]) extends Standard {
-            protected function pExpr_Array(Array_ $node): string
-            {
-                if (empty($node->items)) {
-                    return '[]';
-                }
-                
-                $items = [];
-                foreach ($node->items as $item) {
-                    $items[] = $this->p($item);
-                }
-                
-                return '[' . $this->nl
-                    . $this->indentString(implode(',' . $this->nl, $items))
-                    . ',' . $this->nl
-                    . ']';
-            }
-            
-            protected function indentString(string $str): string
-            {
-                return preg_replace('/^/m', '    ', $str);
-            }
-        };
+        $printer = new ConfigPrinter();
         
         file_put_contents(
             $filename ?? $this->path,

@@ -985,4 +985,36 @@ PHP;
         expect($result['extra'])->toBe('data2');
         expect($result['more'])->toBe('info');
     });
+    
+
+    it('handles double quotes in keys and values correctly', function () {
+        $base = <<<'PHP'
+<?php
+return [
+    "name" => "Romidun \" as",
+    "test \"TEST\"" => "value with \"quotes\"",
+    "normal" => "App\Models\User",
+];
+PHP;
+
+        file_put_contents("{$this->testDir}/base.php", $base);
+
+        $editor = new ConfigEditor("{$this->testDir}/base.php");
+        $editor->save("{$this->testDir}/result.php");
+
+        $result = require "{$this->testDir}/result.php";
+
+        // Verify values are preserved correctly
+        expect($result['name'])->toBe('Romidun " as');
+        expect($result['test "TEST"'])->toBe('value with "quotes"');
+        expect($result['normal'])->toBe('App\Models\User');
+
+        // Verify file output is properly escaped
+        $fileContent = file_get_contents("{$this->testDir}/result.php");
+        expect($fileContent)->toContain('"Romidun \" as"');
+        expect($fileContent)->toContain('"test \"TEST\""');
+        expect($fileContent)->toContain('"value with \"quotes\""');
+    });
+
+
 });
